@@ -17,6 +17,10 @@
   --radius-sm: 0.5rem;
 }
 
+html {
+  font-size: 120% !important;
+}
+
 :root {
   --background: 210 40% 98%;
   --foreground: 222 47% 11%;

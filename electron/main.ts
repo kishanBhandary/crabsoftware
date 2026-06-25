@@ -1,10 +1,19 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import * as http from 'http';
 
 let nextProcess: ChildProcess | null = null;
 let mainWindow: BrowserWindow | null = null;
+
+// Listen for external URL open requests from renderer/preload
+ipcMain.on('open-external', async (event, url) => {
+  try {
+    await shell.openExternal(url);
+  } catch (err) {
+    console.error('Failed to open external URL:', err);
+  }
+});
 
 function startNextServer() {
   const isDev = !app.isPackaged;
