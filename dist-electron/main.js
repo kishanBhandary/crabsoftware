@@ -39,6 +39,15 @@ const child_process_1 = require("child_process");
 const http = __importStar(require("http"));
 let nextProcess = null;
 let mainWindow = null;
+// Listen for external URL open requests from renderer/preload
+electron_1.ipcMain.on('open-external', async (event, url) => {
+    try {
+        await electron_1.shell.openExternal(url);
+    }
+    catch (err) {
+        console.error('Failed to open external URL:', err);
+    }
+});
 function startNextServer() {
     const isDev = !electron_1.app.isPackaged;
     // Use tsx or direct next command depending on environment
