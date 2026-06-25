@@ -56,10 +56,10 @@ function checkServerReady(callback: () => void) {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
-    minWidth: 1024,
-    minHeight: 768,
+    width: 1600,
+    height: 950,
+    minWidth: 1200,
+    minHeight: 800,
     title: "CrabShack Water Quality Pro",
     titleBarStyle: 'default',
     webPreferences: {
