@@ -17,26 +17,40 @@ ipcMain.on('open-external', async (event, url) => {
 
 function startNextServer() {
   const isDev = !app.isPackaged;
-  // Use tsx or direct next command depending on environment
-  const args = isDev 
-    ? ['next', 'dev', '-p', '3000'] 
-    : ['next', 'start', '-p', '3000'];
-
-  console.log(`[Electron] Starting Next.js server in ${isDev ? 'development' : 'production'} mode...`);
-
-  // We pass the app's userData path to the Next.js server so it knows where to store the database
   const userDataPath = app.getPath('userData');
   console.log(`[Electron] User Data Path for SQLite database: ${userDataPath}`);
 
-  nextProcess = spawn('npx', args, {
-    cwd: path.join(__dirname, '..'), // Run from project root
-    shell: true,
-    env: { 
-      ...process.env, 
-      PORT: '3000', 
-      NODE_ENV: isDev ? 'development' : 'production',
-      USER_DATA_PATH: userDataPath
-    }
+  if (isDev) {
+    console.log(`[Electron] Starting Next.js server in development mode...`);
+    nextProcess = spawn('npx', ['next', 'dev', '-p', '3000'], {
+      cwd: path.join(__dirname, '..'),
+      shell: true,
+      env: { 
+        ...process.env, 
+        PORT: '3000', 
+        NODE_ENV: 'development',
+        USER_DATA_PATH: userDataPath
+      }
+    });
+  } else {
+    console.log(`[Electron] Starting Next.js server in production mode...`);
+    // In production, run the packaged Next.js server using Electron's Node runtime
+    const nextCliPath = path.join(__dirname, '..', 'node_modules', 'next', 'dist', 'bin', 'next');
+    nextProcess = spawn(process.execPath, [nextCliPath, 'start', '-p', '3000'], {
+      cwd: path.join(__dirname, '..'),
+      shell: false, // Don't open terminal window on Windows
+      env: { 
+        ...process.env, 
+        PORT: '3000', 
+        NODE_ENV: 'production',
+        ELECTRON_RUN_AS_NODE: '1',
+        USER_DATA_PATH: userDataPath
+      }
+    });
+  }
+
+  nextProcess.on('error', (err) => {
+    console.error('[Electron] Failed to start Next.js server process:', err);
   });
 
   nextProcess.stdout?.on('data', (data) => {

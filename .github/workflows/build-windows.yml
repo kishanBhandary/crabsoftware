@@ -4,12 +4,16 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
   build:
     name: Build & Package Windows Installer
     runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -20,6 +24,21 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+
+      - name: Determine tag name and version
+        id: meta
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
+          if ($env:GITHUB_REF -like 'refs/tags/*') {
+            Write-Output "Triggered by tag: $tag"
+            echo "TAG_NAME=$tag" >> $env:GITHUB_ENV
+          } else {
+            Write-Output "Triggered by branch push. Falling back to package.json version: v$version"
+            echo "TAG_NAME=v$version" >> $env:GITHUB_ENV
+          }
+          echo "VERSION=$version" >> $env:GITHUB_ENV
 
       - name: Install dependencies
         run: npm ci
@@ -44,3 +63,18 @@ jobs:
           name: CrabShack Water Quality Pro Installer
           path: dist-package/
           if-no-files-found: error
+
+      - name: Create GitHub Release and Upload Installer
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: Release ${{ env.TAG_NAME }}
+          body: |
+            Automated production release of CrabShack Water Quality Pro (${{ env.TAG_NAME }}).
+            
+            This release contains the production-ready Windows Installer (`Setup.exe`).
+          draft: false
+          prerelease: false
+          files: dist-package/CrabShack Water Quality Pro Setup.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
